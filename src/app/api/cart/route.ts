@@ -1,21 +1,43 @@
 // src/app/api/cart/route.ts
 import { NextResponse } from 'next/server';
+import { getCartItems, addToCart, updateCartItem, removeFromCart, clearCart } from '@/lib/db-operations';
 
 // GET /api/cart - Get cart items
 export async function GET() {
-  // In a real application, this would fetch cart items from a database
-  // based on user session or authentication token
-  return NextResponse.json({ message: 'Cart API endpoint - GET method' });
+  try {
+    const cartItems = await getCartItems();
+    return NextResponse.json(cartItems);
+  } catch (err) {
+    console.error('Error fetching cart items:', err);
+    return NextResponse.json(
+      { error: 'Failed to fetch cart items' },
+      { status: 500 }
+    );
+  }
 }
 
 // POST /api/cart - Add item to cart
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    // In a real application, this would add an item to the user's cart in the database
+    const { bookId, quantity } = body;
+
+    if (!bookId || !quantity) {
+      return NextResponse.json(
+        { error: 'Missing required fields: bookId and quantity' },
+        { status: 400 }
+      );
+    }
+
+    const newItem = await addToCart({
+      bookId,
+      quantity,
+      addedAt: new Date().toISOString()
+    });
+
     return NextResponse.json({ 
       message: 'Item added to cart successfully',
-      item: body 
+      item: newItem 
     });
   } catch (err) {
     console.error('Error adding item to cart:', err);
@@ -30,10 +52,19 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    // In a real application, this would update an existing cart item
+    const { id, quantity } = body;
+
+    if (!id || quantity === undefined) {
+      return NextResponse.json(
+        { error: 'Missing required fields: id and quantity' },
+        { status: 400 }
+      );
+    }
+
+    await updateCartItem(id, quantity);
+
     return NextResponse.json({ 
-      message: 'Cart item updated successfully',
-      item: body 
+      message: 'Cart item updated successfully'
     });
   } catch (err) {
     console.error('Error updating cart item:', err);
@@ -44,13 +75,29 @@ export async function PUT(request: Request) {
   }
 }
 
-// DELETE /api/cart - Remove item from cart
+// DELETE /api/cart - Remove item from cart or clear entire cart
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const itemId = searchParams.get('itemId');
+    const clearAll = searchParams.get('clearAll');
+
+    if (clearAll === 'true') {
+      await clearCart();
+      return NextResponse.json({ 
+        message: 'Cart cleared successfully'
+      });
+    }
+
+    if (!itemId) {
+      return NextResponse.json(
+        { error: 'Missing required parameter: itemId' },
+        { status: 400 }
+      );
+    }
+
+    await removeFromCart(itemId);
     
-    // In a real application, this would remove an item from the user's cart
     return NextResponse.json({ 
       message: 'Item removed from cart successfully',
       itemId 

@@ -1,10 +1,20 @@
 // src/app/api/books/route.ts
 import { NextResponse } from 'next/server';
-import { books } from '../../data/books';
+import { getAllBooks, searchBooks } from '@/lib/db-operations';
 
-// GET /api/books - Return all books
-export async function GET() {
+// GET /api/books - Return all books or search results
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const searchQuery = searchParams.get('search');
+
+    let books;
+    if (searchQuery) {
+      books = await searchBooks(searchQuery);
+    } else {
+      books = await getAllBooks();
+    }
+
     return NextResponse.json(books);
   } catch (err) {
     console.error('Error fetching books:', err);

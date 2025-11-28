@@ -4,9 +4,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { books } from '../../data/books';
-import { reviews } from '../../data/reviews';
-import { Book, CartItem, Review } from '../../types';
+import { fetchBookById, addToCart } from '@/lib/api-client';
+import { Book, Review } from '../../types';
 
 export default function BookDetailPage() {
   const [book, setBook] = useState<Book | null>(null);
@@ -20,53 +19,41 @@ export default function BookDetailPage() {
   const { id } = params;
 
   useEffect(() => {
-    if (id) {
-      const foundBook = books.find((b) => b.id === id);
-      if (foundBook) {
-        setBook(foundBook);
-        // Get reviews for this book
-        const bookReviewsData = reviews.filter((review) => review.bookId === id);
-        setBookReviews(bookReviewsData);
-      } else {
-        setError('Book not found.');
+    const loadBookData = async () => {
+      if (id && typeof id === 'string') {
+        try {
+          setIsLoading(true);
+          const bookData = await fetchBookById(id);
+          setBook(bookData);
+          setBookReviews(bookData.reviews || []);
+        } catch (err) {
+          console.error('Failed to load book:', err);
+          setError('Book not found.');
+        } finally {
+          setIsLoading(false);
+        }
       }
-      setIsLoading(false);
-    }
-  }, [id]);
-
-  const handleAddToCart = () => {
-    if (!book) return;
-
-    const cartItem: CartItem = {
-      id: `${book.id}-${Date.now()}`,
-      bookId: book.id,
-      quantity: quantity,
-      addedAt: new Date().toISOString(),
     };
 
-    // Retrieve existing cart from localStorage
-    const storedCart = localStorage.getItem('cart');
-    const cart: CartItem[] = storedCart ? JSON.parse(storedCart) : [];
+    loadBookData();
+  }, [id]);
 
-    // Check if the book is already in the cart
-    const existingItemIndex = cart.findIndex((item) => item.bookId === book.id);
+  const handleAddToCart = async () => {
+    if (!book) return;
 
-    if (existingItemIndex > -1) {
-      // Update quantity if item already exists
-      cart[existingItemIndex].quantity += quantity;
-    } else {
-      // Add new item to cart
-      cart.push(cartItem);
+    try {
+      // Add to cart via API
+      await addToCart(book.id, quantity);
+
+      // Dispatch a custom event to notify the Navbar
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+
+      // Redirect to the cart page after adding
+      router.push('/cart');
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+      // You could show an error notification here
     }
-
-    // Save updated cart to localStorage
-    localStorage.setItem('cart', JSON.stringify(cart));
-
-    // Dispatch a custom event to notify the Navbar
-    window.dispatchEvent(new CustomEvent('cartUpdated'));
-
-    // Redirect to the cart page after adding
-    router.push('/cart');
   };
   
   const renderStars = (rating: number) => {
