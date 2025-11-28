@@ -31,11 +31,6 @@ function transformCartItem(doc: any): CartItem {
 }
 
 // Books operations
-export async function getAllBooks(options: { 
-  limit?: number; 
-  skip?: number;
-  sortBy?: 'title' | 'price' | 'rating' | 'datePublished';
-  sortOrder?: 'asc' | 'desc';
 export async function getAllBooks(options: { limit?: number; skip?: number; sortBy?: string; sortOrder?: 'asc' | 'desc' } = {}): Promise<Book[]> {
   try {
     console.log('[getAllBooks] Starting to fetch books...');
