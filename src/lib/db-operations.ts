@@ -36,9 +36,14 @@ export async function getAllBooks(options: {
   skip?: number;
   sortBy?: 'title' | 'price' | 'rating' | 'datePublished';
   sortOrder?: 'asc' | 'desc';
-} = {}): Promise<Book[]> {
+export async function getAllBooks(options: { limit?: number; skip?: number; sortBy?: string; sortOrder?: 'asc' | 'desc' } = {}): Promise<Book[]> {
   try {
+    console.log('[getAllBooks] Starting to fetch books...');
+    console.log('[getAllBooks] MONGODB_URI exists:', !!process.env.MONGODB_URI);
+    
     const db = await getDatabase();
+    console.log('[getAllBooks] Database connection successful');
+    
     const { limit = 100, skip = 0, sortBy = 'title', sortOrder = 'asc' } = options;
     
     const sort: any = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
@@ -50,10 +55,15 @@ export async function getAllBooks(options: {
       .skip(skip)
       .toArray();
     
+    console.log('[getAllBooks] Found books:', books.length);
     return books.map(transformBook);
   } catch (error) {
-    console.error('Error fetching books:', error);
-    throw new Error('Failed to fetch books from database');
+    console.error('[getAllBooks] Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      mongoUriSet: !!process.env.MONGODB_URI
+    });
+    throw error;
   }
 }
 
