@@ -4,10 +4,10 @@ import { getBookById, getReviewsByBookId } from '@/lib/db-operations';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const bookId = params.id;
+    const { id: bookId } = await params;
 
     // Fetch book from database
     const book = await getBookById(bookId);

@@ -60,7 +60,7 @@ export async function getAllBooks(options: {
 export async function getBookById(id: string): Promise<Book | null> {
   try {
     const db = await getDatabase();
-    const book = await db.collection('books').findOne({ _id: id });
+    const book = await db.collection('books').findOne({ _id: id } as any);
     return book ? transformBook(book) : null;
   } catch (error) {
     console.error(`Error fetching book ${id}:`, error);
@@ -218,7 +218,7 @@ export async function createReview(review: Omit<Review, 'id'>): Promise<Review> 
       verified: review.verified ?? false
     };
     
-    await db.collection('reviews').insertOne(reviewDoc);
+    await db.collection('reviews').insertOne(reviewDoc as any);
     
     // Update book's review count and average rating
     await updateBookReviewStats(review.bookId);
@@ -239,7 +239,7 @@ async function updateBookReviewStats(bookId: string): Promise<void> {
     const averageRating = reviews.reduce((sum, r: any) => sum + r.rating, 0) / reviewCount;
     
     await db.collection('books').updateOne(
-      { _id: bookId },
+      { _id: bookId } as any,
       { 
         $set: { 
           reviewCount,
@@ -303,7 +303,7 @@ export async function addToCart(item: Omit<CartItem, 'id'>): Promise<CartItem> {
       addedAt: item.addedAt || new Date().toISOString()
     };
     
-    await db.collection('cart').insertOne(cartDoc);
+    await db.collection('cart').insertOne(cartDoc as any);
     return transformCartItem(cartDoc);
   } catch (error) {
     console.error('Error adding item to cart:', error);
@@ -321,7 +321,7 @@ export async function updateCartItem(id: string, quantity: number): Promise<void
     }
     
     const result = await db.collection('cart').updateOne(
-      { _id: id },
+      { _id: id } as any,
       { $set: { quantity } }
     );
     
@@ -337,7 +337,7 @@ export async function updateCartItem(id: string, quantity: number): Promise<void
 export async function removeFromCart(id: string): Promise<void> {
   try {
     const db = await getDatabase();
-    const result = await db.collection('cart').deleteOne({ _id: id });
+    const result = await db.collection('cart').deleteOne({ _id: id } as any);
     
     if (result.deletedCount === 0) {
       throw new Error('Cart item not found');

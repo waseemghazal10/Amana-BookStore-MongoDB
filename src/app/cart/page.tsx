@@ -22,8 +22,10 @@ export default function CartPage() {
         cart.map(async (item) => {
           try {
             const bookData = await fetchBookById(item.bookId);
+            // Extract just the book data without reviews
+            const { reviews, ...bookWithoutReviews } = bookData;
             return {
-              book: bookData,
+              book: bookWithoutReviews as Book,
               quantity: item.quantity,
               cartId: item.id
             };
